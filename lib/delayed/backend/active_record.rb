@@ -9,7 +9,7 @@ module Delayed
         include Delayed::Backend::Base
 
         attr_accessible :priority, :run_at, :queue, :payload_object,
-          :failed_at, :locked_at, :locked_by
+          :failed_at, :locked_at, :locked_by, :dependent_job_id
 
         before_save :set_default_run_at
 
@@ -20,13 +20,13 @@ module Delayed
         if rails3?
           self.table_name = 'delayed_jobs'
           scope :ready_to_run, lambda{|worker_name, max_run_time|
-            where('(run_at <= ? AND (locked_at IS NULL OR locked_at < ?) OR locked_by = ?) AND failed_at IS NULL', db_time_now, db_time_now - max_run_time, worker_name)
+            where('(run_at <= ? AND (locked_at IS NULL OR locked_at < ?) OR locked_by = ?) AND failed_at IS NULL AND dependent_job_id NOT IN (SELECT id FROM delayed_jobs)', db_time_now, db_time_now - max_run_time, worker_name)
           }
           scope :by_priority, order('priority ASC, run_at ASC')
         else
           set_table_name :delayed_jobs
           named_scope :ready_to_run, lambda {|worker_name, max_run_time|
-            { :conditions => ['(run_at <= ? AND (locked_at IS NULL OR locked_at < ?) OR locked_by = ?) AND failed_at IS NULL', db_time_now, db_time_now - max_run_time, worker_name] }
+            { :conditions => ['(run_at <= ? AND (locked_at IS NULL OR locked_at < ?) OR locked_by = ?) AND failed_at IS NULL AND dependent_job_id NOT IN (SELECT id FROM delayed_jobs)', db_time_now, db_time_now - max_run_time, worker_name] }
           }
           named_scope :by_priority, :order => 'priority ASC, run_at ASC'
         end

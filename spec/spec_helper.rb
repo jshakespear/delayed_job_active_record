@@ -27,6 +27,7 @@ ActiveRecord::Schema.define do
     table.datetime :failed_at
     table.string   :locked_by
     table.string   :queue
+    table.integer  :dependent_job_id, :default => 0
     table.timestamps
   end
 
